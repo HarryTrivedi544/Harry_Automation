@@ -13,10 +13,10 @@ export class LoginPage {
     this.loginButton = page.getByText('SIGN IN', { exact: true });
   }
 
-  async goto() {
-    await this.page.goto('/', {
+  async goto(baseUrl = '/') {
+    await this.page.goto(baseUrl, {
       waitUntil: 'domcontentloaded',
-      timeout: 30_000,
+      timeout: 60_000,
     });
     await this.page.waitForTimeout(30_000);
   }
@@ -26,5 +26,6 @@ export class LoginPage {
     await this.passwordInput.fill(password);
     await this.loginButton.click();
     await this.page.waitForURL(/\/home\/?/, { timeout: 15_000 });
+    await this.page.waitForTimeout(3_000);
   }
 }

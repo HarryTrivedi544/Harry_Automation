@@ -2,14 +2,18 @@
   "name": "playwright-automation",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": { "test": "playwright test", "test:login": "playwright test tests/e2e/regression/dashboard.spec.ts --project=chromium --headed" },
+  "scripts": {
+    "test": "playwright test",
+    "test:login": "playwright test tests/e2e/regression/dashboard.spec.ts --project=chromium --headed"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "@types/node": "^25.2.3"
+    "@types/node": "^25.2.3",
+    "xlsx": "^0.18.5"
   },
   "dependencies": {
     "dotenv": "^17.2.4"
