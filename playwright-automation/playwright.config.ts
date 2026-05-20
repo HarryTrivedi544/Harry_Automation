@@ -55,6 +55,52 @@ export default defineConfig({
         };
       })(),
     },
+    {
+      name: 'kiosk',
+      testMatch: /.*kiosk-preferences\.spec\.ts/,
+      use: {
+        browserName: 'chromium',
+        channel: 'chrome',
+        viewport: { width: 1080, height: 1920 },
+        screen: { width: 1080, height: 1920 },
+        deviceScaleFactor: 1,
+        isMobile: false,
+        hasTouch: true,
+        launchOptions: {
+          args: [
+            '--window-size=540,960',
+            '--window-position=0,0',
+            '--force-device-scale-factor=0.5',
+            '--disable-features=HudDisplayForPerformanceMetrics',
+            '--hide-scrollbars',
+            '--use-fake-ui-for-media-stream',
+          ],
+        },
+      },
+    },
+    {
+      name: 'kiosk-scaled',
+      testMatch: /.*kiosk-preferences\.spec\.ts/,
+      use: {
+        browserName: 'chromium',
+        channel: 'chrome',
+        viewport: { width: 1080, height: 1920 },
+        screen: { width: 1080, height: 1920 },
+        deviceScaleFactor: 1,
+        isMobile: false,
+        hasTouch: true,
+        launchOptions: {
+          args: [
+            '--window-size=540,960',
+            '--window-position=0,0',
+            '--force-device-scale-factor=0.5',
+            '--disable-features=HudDisplayForPerformanceMetrics',
+            '--hide-scrollbars',
+            '--use-fake-ui-for-media-stream',
+          ],
+        },
+      },
+    },
 
    /* {
       name: 'firefox',
