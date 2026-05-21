@@ -18,18 +18,25 @@ test.use({
   ...kioskDevice,
 });
 
-test.describe('Kiosk admin preferences', () => {
-  test('updates kiosk box id @regression', async ({ page }, testInfo) => {
+test.describe('Kiosk admin add or refill items', () => {
+  test('loads stock code from admin stock flow @regression', async ({ page }, testInfo) => {
     const kioskUrl = process.env.KIOSK_STAGE_URL?.trim();
     if (!kioskUrl) {
       throw new Error('Missing KIOSK_STAGE_URL in .env.');
     }
 
-    const testData = loadTestData({
+    const kioskAdminData = loadTestData({
       environment: 'stage',
       userRole: 'admin',
       credentialProfile: 'admin',
       testCaseId: 'kiosk-preferences',
+      scenario: 'default',
+    });
+    const addRefillData = loadTestData({
+      environment: 'stage',
+      userRole: 'admin',
+      credentialProfile: 'admin',
+      testCaseId: 'kiosk-add-refill-items',
       scenario: 'default',
     });
     const credentials = getCredentialProfileCredentials('admin');
@@ -48,25 +55,36 @@ test.describe('Kiosk admin preferences', () => {
       });
     });
 
-    await test.step('Open admin login', async () => {
+    await test.step('Run KioskAdmin prerequisite', async () => {
       await kioskAdminPage.openAdminLogin();
+      await kioskAdminPage.signIn(credentials);
+      await kioskAdminPage.openPreferenceUpdate();
+      await kioskAdminPage.saveKioskBoxId(kioskAdminData.required('kioskBoxId'));
+      await kioskAdminPage.goBack();
+      await kioskAdminPage.exitAdminMenu();
+      await expect(page).toHaveURL(/\/kiosk\/home\/?/);
+    });
+
+    await test.step('Open stock admin login', async () => {
+      await kioskAdminPage.openStockAdminLogin();
     });
 
     await test.step('Sign in as kiosk admin', async () => {
       await kioskAdminPage.signIn(credentials);
     });
 
-    await test.step('Open kiosk preference update', async () => {
-      await kioskAdminPage.openPreferenceUpdate();
+    await test.step('Open add or refill items', async () => {
+      await kioskAdminPage.openAddOrRefillItems();
     });
 
-    await test.step('Update kiosk box id and save', async () => {
-      await kioskAdminPage.saveKioskBoxId(testData.required('kioskBoxId'));
+    await test.step('Load stock code', async () => {
+      await kioskAdminPage.loadStockCode(addRefillData.required('stockCode'));
     });
 
-    await test.step('Return and exit admin menu', async () => {
+    await test.step('Exit stock flow and admin menu', async () => {
       await kioskAdminPage.goBack();
-      await kioskAdminPage.exitAdminMenu();
+      await kioskAdminPage.exitStockFlowAnyway();
+      await kioskAdminPage.seeYouSoon();
     });
 
     await expect(page).toHaveURL(/\/kiosk\/home\/?/);

@@ -57,12 +57,11 @@ export default defineConfig({
     },
     {
       name: 'kiosk',
-      testMatch: /.*kiosk-preferences\.spec\.ts/,
+      testMatch: /.*kiosk-.*\.spec\.ts/,
       use: {
         browserName: 'chromium',
         channel: 'chrome',
         viewport: { width: 1080, height: 1920 },
-        screen: { width: 1080, height: 1920 },
         deviceScaleFactor: 1,
         isMobile: false,
         hasTouch: true,
@@ -80,12 +79,11 @@ export default defineConfig({
     },
     {
       name: 'kiosk-scaled',
-      testMatch: /.*kiosk-preferences\.spec\.ts/,
+      testMatch: /.*kiosk-.*\.spec\.ts/,
       use: {
         browserName: 'chromium',
         channel: 'chrome',
         viewport: { width: 1080, height: 1920 },
-        screen: { width: 1080, height: 1920 },
         deviceScaleFactor: 1,
         isMobile: false,
         hasTouch: true,

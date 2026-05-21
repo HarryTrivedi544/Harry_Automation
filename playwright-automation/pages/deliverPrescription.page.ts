@@ -19,18 +19,19 @@ export class DeliverPrescriptionPage {
   constructor(page: Page) {
     this.page = page;
     this.notNowButton = page.getByRole('button', { name: 'NOT NOW' });
-    this.deliverPrescriptionLink = page.getByRole('link', { name: 'Deliver Prescription' });
+    this.deliverPrescriptionLink = page.locator('a[href="/home/prescription/assign"]', { hasText: 'Deliver Prescription' });
     this.menuButton = page.getByTestId('MenuIcon');
     this.rxScanInput = page.getByLabel('Scan RX Now');
     this.saveButton = page.getByRole('button', { name: 'SAVE', exact: true });
   }
 
   async dismissOptionalPrompt(): Promise<void> {
-    try {
-      await expect(this.notNowButton).toBeVisible({ timeout: 3_000 });
+    const prompt = this.page.getByText('Do you want to enable consultation?', { exact: true });
+
+    if (await prompt.isVisible({ timeout: 10_000 }).catch(() => false)) {
+      await expect(this.notNowButton).toBeVisible();
       await this.notNowButton.click();
-    } catch {
-      // The consultation prompt is optional and can appear after navigation settles.
+      await expect(prompt).toBeHidden({ timeout: 10_000 });
     }
   }
 
