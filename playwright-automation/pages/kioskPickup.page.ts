@@ -4,7 +4,6 @@ const kioskActionDelayMs = 5_000;
 
 export class KioskPickupPage {
   readonly page: Page;
-  readonly pickupStartImage: Locator;
   readonly pickupCodeInput: Locator;
   readonly pinOneKey: Locator;
   readonly pinTwoKey: Locator;
@@ -17,7 +16,6 @@ export class KioskPickupPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.pickupStartImage = page.locator("xpath=//img[@alt='Image 3']");
     this.pickupCodeInput = page.locator('xpath=//div[2]/input');
     this.pinOneKey = page.locator('xpath=//div[4]/div/div/div[1]/div[1]');
     this.pinTwoKey = page.locator('xpath=//div[4]/div/div/div[1]/div[2]');
@@ -30,7 +28,8 @@ export class KioskPickupPage {
   }
 
   async startPickup(): Promise<void> {
-    await expect(this.pickupStartImage).toBeVisible({ timeout: 30_000 });
+    await expect(this.page).toHaveURL(/\/kiosk\/home\/?/, { timeout: 30_000 });
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   async enterPickupCode(pickupCode: string): Promise<void> {
