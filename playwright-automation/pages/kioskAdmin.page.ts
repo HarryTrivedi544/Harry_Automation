@@ -118,7 +118,7 @@ export class KioskAdminPage {
   }
 
   async openAddOrRefillItems(): Promise<void> {
-    await this.waitForPictureOverlayToClose();
+    await this.waitUntilStockActionIsReady();
     await this.clickStockActionCard();
     await this.waitForKioskUi();
     await expect(this.stockCodeInput).toBeEditable({ timeout: 30_000 });
@@ -187,6 +187,15 @@ export class KioskAdminPage {
 
     await expect(addOrRefillText).toBeVisible({ timeout: 60_000 });
 
+    const directClickWorked = await this.stockActionCard
+      .click({ timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (directClickWorked) {
+      return;
+    }
+
     const cardRect = await this.page.evaluate(() => {
       const description = Array.from(document.querySelectorAll('p')).find((element) => element.textContent?.trim() === 'Add or refill items.');
       let card = description?.parentElement;
@@ -227,12 +236,19 @@ export class KioskAdminPage {
     await this.page.mouse.click(cardRect.x + cardRect.width / 2, cardRect.y + cardRect.height / 2);
   }
 
-  private async waitForPictureOverlayToClose(): Promise<void> {
+  private async waitUntilStockActionIsReady(): Promise<void> {
     const pictureOverlay = this.page.getByText('Smile! Taking your picture.', { exact: true });
+    const addOrRefillText = this.page.getByText('Add or refill items.', { exact: true });
 
-    await pictureOverlay.waitFor({ state: 'detached', timeout: 60_000 }).catch(async () => {
-      await expect(pictureOverlay).toBeHidden({ timeout: 60_000 });
-    });
+    await expect(addOrRefillText).toBeVisible({ timeout: 60_000 });
+
+    if (await pictureOverlay.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await pictureOverlay.waitFor({ state: 'detached', timeout: 60_000 }).catch(async () => {
+        await expect(pictureOverlay).toBeHidden({ timeout: 60_000 });
+      });
+    }
+
+    await expect(addOrRefillText).toBeVisible({ timeout: 30_000 });
   }
 
   private async tapKioskStartScreen(): Promise<void> {

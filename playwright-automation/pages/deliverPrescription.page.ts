@@ -26,12 +26,17 @@ export class DeliverPrescriptionPage {
   }
 
   async dismissOptionalPrompt(): Promise<void> {
-    const prompt = this.page.getByText('Do you want to enable consultation?', { exact: true });
+    const optionalPrompts = [
+      this.page.getByText('Do you want to enable consultation?', { exact: true }),
+      this.page.getByText('Would you like to test this now?', { exact: false }),
+    ];
 
-    if (await prompt.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await expect(this.notNowButton).toBeVisible();
-      await this.notNowButton.click();
-      await expect(prompt).toBeHidden({ timeout: 10_000 });
+    for (const prompt of optionalPrompts) {
+      if (await prompt.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        await expect(this.notNowButton).toBeVisible();
+        await this.notNowButton.click();
+        await expect(prompt).toBeHidden({ timeout: 10_000 });
+      }
     }
   }
 
@@ -123,5 +128,6 @@ export class DeliverPrescriptionPage {
 
   private async pauseBetweenSteps(): Promise<void> {
     await this.page.waitForTimeout(stepDelayMs);
+    await this.dismissOptionalPrompt();
   }
 }
