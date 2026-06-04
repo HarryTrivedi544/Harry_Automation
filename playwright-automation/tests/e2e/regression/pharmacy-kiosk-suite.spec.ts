@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { chromium, test, expect, type Browser, type Page } from '@playwright/test';
 import { loadTestData } from '../../../config/testData';
+import { loadRuntimeEnvironments, resolveRuntimeEnvironment } from '../../../config/runtimeEnvironments';
 import { resolveTestSetup, type TestSetup } from '../../../config/testSetups';
 import { getCredentialProfileCredentials } from '../../../config/users';
 import { DeliverPrescriptionPage } from '../../../pages/deliverPrescription.page';
@@ -26,13 +27,9 @@ const pharmacySetup: TestSetup = {
 test.describe.configure({ timeout: 420_000 });
 
 test.describe('Pharmacy to kiosk run suite', () => {
-  test('delivers prescription, refills kiosk stock, and completes pickup @regression', async ({ page }, testInfo) => {
+  for (const runtimeInput of loadRuntimeEnvironments()) {
+  test(`delivers prescription, refills kiosk stock, and completes pickup [${runtimeInput.name}] @regression`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium', 'Run this suite with the chromium project. Kiosk steps create their own scaled kiosk browser.');
-
-    const kioskUrl = process.env.KIOSK_STAGE_URL?.trim();
-    if (!kioskUrl) {
-      throw new Error('Missing KIOSK_STAGE_URL in .env.');
-    }
 
     const pharmacyData = loadTestData(pharmacySetup);
     const kioskAdminData = loadTestData({
@@ -50,8 +47,12 @@ test.describe('Pharmacy to kiosk run suite', () => {
       scenario: 'default',
     });
     const pharmacyLogin = new LoginPage(page);
-    const resolvedPharmacySetup = resolveTestSetup(pharmacySetup);
-    const kioskCredentials = getCredentialProfileCredentials('admin');
+    const runtimeEnvironment = resolveRuntimeEnvironment(runtimeInput, {
+      webUrl: () => resolveTestSetup(pharmacySetup).baseUrl,
+      kioskUrl: requireDefaultKioskUrl,
+      boxId: () => kioskAdminData.required('kioskBoxId'),
+      credentials: () => getCredentialProfileCredentials('admin'),
+    });
     const deliverPrescriptionPage = new DeliverPrescriptionPage(page);
     let kioskBrowser: Browser | undefined;
     let kioskPage: Page | undefined;
@@ -59,9 +60,9 @@ test.describe('Pharmacy to kiosk run suite', () => {
 
     try {
       await test.step('Run deliver prescription and capture stock codes', async () => {
-        await grantPharmacyPermissions(page, resolvedPharmacySetup.baseUrl);
-        await pharmacyLogin.goto(resolvedPharmacySetup.baseUrl);
-        await pharmacyLogin.login(resolvedPharmacySetup.user.username, resolvedPharmacySetup.user.password);
+        await grantPharmacyPermissions(page, runtimeEnvironment.webUrl);
+        await pharmacyLogin.goto(runtimeEnvironment.webUrl);
+        await pharmacyLogin.login(runtimeEnvironment.credentials.username, runtimeEnvironment.credentials.password);
         await expect(page).toHaveURL(/\/home\/?/);
         await deliverPrescriptionPage.gotoDeliverPrescription();
 
@@ -110,7 +111,7 @@ test.describe('Pharmacy to kiosk run suite', () => {
         const activeKioskPage = requireKioskPage(kioskPage);
         const kioskAdminPage = new KioskAdminPage(activeKioskPage);
 
-        await kioskAdminPage.goto(kioskUrl);
+        await kioskAdminPage.goto(runtimeEnvironment.kioskUrl);
         const dimensions = await kioskAdminPage.getKioskDimensions();
         const dimensionReport = { viewportSize: activeKioskPage.viewportSize(), ...dimensions };
 
@@ -121,9 +122,9 @@ test.describe('Pharmacy to kiosk run suite', () => {
         });
 
         await kioskAdminPage.openAdminLogin();
-        await kioskAdminPage.signIn(kioskCredentials);
+        await kioskAdminPage.signIn(runtimeEnvironment.credentials);
         await kioskAdminPage.openPreferenceUpdate();
-        await kioskAdminPage.saveKioskBoxId(kioskAdminData.required('kioskBoxId'));
+        await kioskAdminPage.saveKioskBoxId(runtimeEnvironment.boxId);
         await kioskAdminPage.goBack();
         await kioskAdminPage.exitAdminMenu();
         await expect(activeKioskPage).toHaveURL(/\/kiosk\/home\/?/);
@@ -135,7 +136,7 @@ test.describe('Pharmacy to kiosk run suite', () => {
         const kioskAdminPage = new KioskAdminPage(activeKioskPage);
 
         await kioskAdminPage.openStockAdminLogin();
-        await kioskAdminPage.signIn(kioskCredentials);
+        await kioskAdminPage.signIn(runtimeEnvironment.credentials);
         await kioskAdminPage.openAddOrRefillItems();
         await kioskAdminPage.loadStockCode(codes.stockCode);
         await kioskAdminPage.goBack();
@@ -160,6 +161,7 @@ test.describe('Pharmacy to kiosk run suite', () => {
       await kioskBrowser?.close().catch(() => undefined);
     }
   });
+  }
 });
 
 function requireSuiteCodes(codes: SuiteStockCodes | undefined): SuiteStockCodes {
@@ -227,4 +229,14 @@ async function grantPharmacyPermissions(page: Page, url: string): Promise<void> 
   const origin = new URL(url).origin;
 
   await page.context().grantPermissions(['camera', 'microphone'], { origin });
+}
+
+function requireDefaultKioskUrl(): string {
+  const kioskUrl = process.env.KIOSK_STAGE_URL?.trim();
+
+  if (!kioskUrl) {
+    throw new Error('Missing KIOSK_STAGE_URL in .env.');
+  }
+
+  return kioskUrl;
 }
